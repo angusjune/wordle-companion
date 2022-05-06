@@ -2,21 +2,28 @@
 	import { tick } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import Keyboard from './Keyboard.svelte';
+	import Mask from './Mask.svelte';
+	import Toast from './Toast.svelte';
+	import Modal from './Modal.svelte';
 	
-	const AT_LEAST = 2;
+	const AT_LEAST = 1;
 
 	let value = ['?', '?', '?', '?', '?'];
+
+	let disabledKeys = [];
 
     let cursor = 0;
 
 	let showKb  = true;
 	let loading = false;
 	let showToast = false;
+	let showModal = false;
+	let showMask = false;
+	let enteringDisabledKeys = false;
 	let toastMsg = '';
 
 	let candidates = [];
-	let pronouns = [];
-	let defs = [];
+	let filteredCandidates = [];
 
 	// how many values in array is not '?'
 	function countNonEmpty() {
@@ -30,28 +37,63 @@
 	}
 
 	function onKbInput(e) {
-		let {value: keyVal} = e.detail;
-		keyVal = keyVal.toLowerCase();
+		const { key } = e.detail;
+		const keyVal = key.toLowerCase();
 
-		if (keyVal === 'backspace') {
-			value[cursor] = '?';
-		} else if (keyVal === 'enter') {
-			if (countNonEmpty() >= AT_LEAST) {
-				showKb = false;
-				fetchData();
-			} else {
+		if (!enteringDisabledKeys) {
+			if (keyVal === 'backspace') {
+				value[cursor] = '?';
+			} else if (keyVal === 'enter') {
+				if (countNonEmpty() >= AT_LEAST) {
+					showKb = false;
+					fetchData();
+				} else {
 
+				}
+			} else if (keyVal.match(/^[a-z]$/i)) {
+				value[cursor] = keyVal;
 			}
-		} else if (keyVal.match(/^[a-z]$/)) {
-			value[cursor] = keyVal;
+		} else {
+			if (keyVal === 'enter') {
+				enteringDisabledKeys = false;
+			} else if (keyVal.match(/^[a-z]$/i)) {
+				const index = disabledKeys.indexOf(key);
+				if (index < 0) {
+					// key does not exists in list
+					disabledKeys = [...disabledKeys, key];
+				} else {
+					disabledKeys.splice(index, 1);
+					disabledKeys = disabledKeys;
+				}
+			}
 		}
 	}
 
 	function onKeyPress(e){
-		onKbInput({detail: {value: e.key}});
+		onKbInput({detail: { key: e.key }});
 	}
 
-	function toast(msg, lastsFor=2000) {
+	function onClickEnterDisabledKeys() {
+		enteringDisabledKeys = !enteringDisabledKeys;
+		showKb = true;
+	}
+
+	let pronun = '';
+	let word = '';
+	let defs = [];
+
+	function onClickWord(item) {
+		console.log(item);
+		// const { tags } = item;
+
+		pronun = item.tags[1].replace('ipa_pron:', '');
+		word = item.word;
+		defs = item.defs;
+
+		showModal = true;
+	}
+
+	function toastOn(msg, lastsFor=2000) {
 		showToast = true;
 		toastMsg  = msg;
 		setTimeout(() => {
@@ -68,14 +110,16 @@
 		const response = await fetch(ENDPOINT + query);
 		const data = await response.json();
 		candidates = data;
-		// candidates = data.map(item => item.word);
-		// pronouns = data.map(item => item.tags.ipa_pron);
-		// defs = data.map(item => item.defs);
 
 		await tick();
 		loading = false;
-		console.log(candidates);
 	}
+
+	$:filteredCandidates = candidates.filter(item => !disabledKeys.some(v => item.word.includes(v)))
+	$:console.log(filteredCandidates);
+	$:showMask = enteringDisabledKeys;
+	$:showMask = showModal;
+	$:showKb = !showModal;
 </script>
 
 <svelte:body on:keydown={onKeyPress} on:touchstart={()=>{}} />
@@ -93,50 +137,73 @@
 		</div>
 	
 		<div class="word-wrap">
-			{#each candidates as candidate}
-			<div class="word">{candidate.word}</div>
+			{#each filteredCandidates as candidate}
+			<div class="word" on:click={()=>onClickWord(candidate)}>{candidate.word}</div>
 			{/each}
 		</div>
 	</main>
-	
+
+	{#if !showModal}
+	<button class="btn" class:at-bottom={!showKb} on:click={onClickEnterDisabledKeys}>{enteringDisabledKeys ? 'Done' : 'Select not-in-the-word letters'}</button>
+	{/if}
+
 	{#if showKb}
 	<div class="kb-wrap" transition:fade="{{ duration: 200 }}">
-		<Keyboard on:input={onKbInput} />
+		<Keyboard on:input={onKbInput} {disabledKeys} />
 	</div>
 	{/if}
 </div>
+
+<Mask show={showMask} />
+
+<Modal bind:show={showModal}>
+	<div class="dict">
+		<header class="dict__header">
+			<span class="dict__word">{word}</span>
+			{#if pronun}
+			<span class="dict__pronun">|{pronun}|</span>
+			{/if}
+		</header>
+		{#if defs}
+		{#each defs as def}
+		<p class="dict_def">{@html def }</p>
+		{/each}
+		{/if}
+	</div>
+</Modal>
 
 
 <style>
 	@import url('https://fonts.googleapis.com/css2?family=Koulen&display=swap');
 
 	:global(body) {
-		--max-width: 90%;
+		--width: 90%;
 
 		--background: #121214;
 		--green: #528c4e;
 		--border: #3a3a3c;
 
 		background: var(--background);
+		font-size: 16px;
+		user-select: none;
 	}
 
 	.container {
 		display: flex;
 		flex-direction: column;
 		height: 100vh;
-		margin: 0 auto;
-		max-width: var(--max-width);
 	}
 
 	.header {
 		font-family: 'Koulen', cursive;
 		color: #fff;
-		padding: 0.5rem 0;
+		width: 100%;
+		padding: 0.5em 0;
 	}
 
 	.header__title {
 		margin: 0;
-		font-size: 1.5rem;
+		font-size: 1.5em;
 		text-align: center;
 	}
 
@@ -145,12 +212,16 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;		
+		width: var(--width);
+		margin: 0 auto;
 	}
 
 	.char-wrap {
+		width: 100%;
 		display: flex;
-		gap: 0.25rem;
-		padding: 2rem;
+		justify-content: center;
+		gap: 0.25em;
+		padding: 2em;
 	}
 
 	.char {
@@ -160,35 +231,41 @@
 		place-items: center;
 		border: 2px solid var(--border);
 		color: #fff;
-		font-size: 1.25rem;
+		font-size: 1.25em;
 		font-weight: bold;
-		width: 3.5rem;
-		height: 4rem;
+		width: 20%;
+		max-width: 3.5em;
+		height: 4em;
 	}
 
 	.char.focus {
-		background: rgba(255,255,255,0.1);
+		border-color: #aaa;
+		background: rgba(255,255,255,0.05);
 	}
 
 	.char.filled {
 		background: var(--green);
-		border: 0;
+		border-color: transparent;
+	}
+
+	.char.filled.focus {
+		border-color: rgba(255,255,255,.4);
 	}
 
 	.word-wrap {
 		width: 100%;
 		display: flex;
 		flex-wrap: wrap;
-		gap: 0.5rem;
+		gap: 0.5em;
 		justify-content: center;
-		padding: 2rem 0;
+		padding: 2em 0;
 	}
 
 	.word {
 		color: rgba(255,255,255,0.6);
 		background: #3a3a3c;
 		border-radius: 4px;
-		padding: 0.25rem;
+		padding: 0.25em;
 	}
 
 	.kb-wrap {
@@ -197,18 +274,59 @@
 		left: 0;
 		right: 0;
 		z-index: 1;
-		padding: 1rem 0 env(safe-area-offset-bottom, 2rem);
+		padding: 1em 0 env(safe-area-offset-bottom, 1em);
 		background: rgba(18,18,20,0.75);
+		-webkit-backdrop-filter: blur(10px);
 		backdrop-filter: blur(10px);
 	}
 
-	/* .kb-wrap.hidden {
-		transform: translateY(100%);
-	} */
+	.btn {
+		--border: 0.5px solid rgba(255,255,255,.06);
+		background: var(--background);
+		color: #fff;
+		border: 0;
+		border-top: var(--border);
+		border-bottom: var(--border);
+		padding: 1em 0;
+		margin: 0;
+		z-index: 1;
+	}
+
+	.btn:active {
+		background: #3a3a3c;
+	}
+
+	.btn.at-bottom {
+		padding-bottom: env(safe-area-offset-bottom, 1em);
+	}
+
+	.dict {
+		padding: 0 1.5em 1.5em;
+	}
+
+	.dict__header {
+		display: flex;
+		gap: 1em;
+		align-items: center;
+	}
+
+	.dict__word {
+		font-size: 1.5em;
+		font-weight: bold;
+	}
+
+	.dict__pronun {
+		opacity: 0.6;
+	}
+
+	.dict__def {
+	}
+
 
 	@media (min-width: 640px) {
 		:global(body) {
-			--max-width: 640px;
+			--width: 640px;
+			font-size: 18px;
 		}
 	}
 </style>

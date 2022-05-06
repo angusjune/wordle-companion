@@ -3,16 +3,13 @@
 
     const dispatch = createEventDispatcher();
 
+    export let disabledKeys = [];
+
     const keys = [
         ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
         ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
         ["enter", "z", "x", "c", "v", "b", "n", "m", "backspace"],
     ];
-
-
-    function onClickKey(e) {
-
-    }
 </script>
 
 <style>
@@ -35,9 +32,10 @@
         -webkit-appearance: none;
         text-transform: uppercase;
         color: #fff;
-        font-size: 0.75rem;
+        font-size: 0.75em;
         font-weight: bold;
         width: 8%;
+        min-width: 8%;
         line-height: 3;
         overflow: hidden;
         border-radius: 4px;
@@ -51,13 +49,22 @@
     .key.action {
         width: auto;
     }
+
+    .key.disabled {
+        background: #3a3a3c;
+    }
 </style>
 
 <div class="keyboard">
 {#each keys as row}
     <div class="row">
         {#each row as key}
-            <button class="key" class:action={!key.match(/^[a-z]$/i)} on:click={()=>{dispatch('input', {value: key})}}>
+            <button 
+                class="key"
+                class:action={!key.match(/^[a-z]$/i)} 
+                class:disabled={disabledKeys.indexOf(key) > -1}
+                on:click={()=>{dispatch('input', { key })}}
+            >
                 {#if key == 'backspace'}
                 <span class="material-symbols-outlined">backspace</span>
                 {:else}
