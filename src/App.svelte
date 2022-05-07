@@ -297,8 +297,8 @@
 	}
 
 	.char.focus {
-		border-color: #aaa;
-		background: rgba(255,255,255,0.05);
+		border-color: var(--green);
+		background: rgba(82, 140, 78, 0.2);
 	}
 
 	.char.filled {
@@ -306,8 +306,8 @@
 		border-color: transparent;
 	}
 
-	.char.filled.focus {
-		border-color: rgba(255,255,255,.4);
+	.char.focus.filled {
+		border-color: #21631C;
 	}
 
 	.tip {
