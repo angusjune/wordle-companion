@@ -11,7 +11,7 @@
 
 	let value = ['?', '?', '?', '?', '?'];
 
-	let filteredChars = [' ', "'"];
+	let filteredChars  = [];
 
     let cursor = 0;
 
@@ -42,7 +42,6 @@
 		const { key } = e.detail;
 		const keyVal = key.toLowerCase();
 		showNoSearchResult = false;
-		filteredCandidates = [];
 
 		if (!enteringFilteredChars) {
 			if (keyVal === 'backspace') {
@@ -55,12 +54,13 @@
 					toastOn('At least ' + AT_LEAST + ' letter' + (AT_LEAST> 1 ? 's' : ''));
 				}
 			} else if (keyVal.match(/^[a-z]$/i)) {
+				filteredCandidates = [];
 				value[cursor] = keyVal;
 			}
 		} else {
 			if (keyVal === 'enter') {
 				enteringFilteredChars = false;
-			} else if (keyVal.match(/^[a-z]$/i)) {
+			} else if (keyVal.match(/^[a-z]$/i) && value.indexOf(keyVal) < 0) {
 				const index = filteredChars.indexOf(key);
 				if (index < 0) {
 					// key does not exists in list
@@ -114,8 +114,7 @@
 		showNoSearchResult = true;
 	}
 
-	$:filteredCandidates = candidates.filter(item => !filteredChars.some(v => item.word.includes(v)))
-	$:console.log(filteredCandidates);
+	$:filteredCandidates = candidates.filter(item => (!filteredChars.some(v => item.word.includes(v))) && /^[a-z]+$/i.test(item.word));
 	$:showMask = enteringFilteredChars;
 	$:showMask = showModal;
 	$:if (showModal) { showKb = false }
@@ -131,7 +130,7 @@
 	<main class="main">
 
 		<div class="char-tip">
-			Enter <span class="green">certain letters</span> in the right boxes
+			Enter <span class="green">confirmed letters</span> in their spots
 		</div>
 		<div class="char-wrap" on:click={()=>{showKb=true}}>
 			{#each value as char, index}
@@ -178,7 +177,7 @@
 		{#if showKb}
 		<div class="kb-wrap" transition:slide={{ duration: 200 }}>
 			<div class="kb-wrap__inner">
-				<Keyboard on:input={onKbInput} {filteredChars} />
+				<Keyboard on:input={onKbInput} {filteredChars} confirmedChars={value} />
 			</div>
 		</div>
 		{/if}
@@ -290,10 +289,10 @@
 		place-items: center;
 		border: 2px solid var(--char-border);
 		color: #fff;
-		font-size: 1.5em;
+		font-size: 2em;
 		font-weight: bold;
-		width: 2.6em;
-		height: 2.7em;
+		width: 2em;
+		height: 2.1em;
 	}
 
 	.char.focus {
