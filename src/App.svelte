@@ -97,9 +97,6 @@
 	function toastOn(msg) {
 		showToast = true;
 		toastMsg  = msg;
-		// setTimeout(() => {
-		// 	showToast = false;
-		// }, lastsFor);
 	}
 
 	async function fetchData() {
@@ -157,7 +154,6 @@
 			{/if}
 
 			{/if}
-
 			
 		</div>
 	</main>
