@@ -3,7 +3,7 @@
 
     const dispatch = createEventDispatcher();
 
-    export let disabledKeys = [];
+    export let filteredChars = [];
 
     const keys = [
         ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
@@ -29,14 +29,16 @@
     }
 
     .key {
+        --key-line-height: 3.5;
+
         -webkit-appearance: none;
         text-transform: uppercase;
         color: #fff;
         font-size: 0.75em;
         font-weight: bold;
-        width: 8%;
-        min-width: 8%;
-        line-height: 3;
+        flex: 1;
+        max-width: calc((100% - 54px) / 10);
+        line-height: var(--key-line-height);
         overflow: hidden;
         border-radius: 4px;
         background: #858886;
@@ -46,13 +48,23 @@
         place-items: center;
     }
 
-    .key.action {
-        width: auto;
+    .key:active {
+        background: #a0a4a2;
     }
 
-    .key.disabled {
+    .key.action {
+        max-width: none;
+    }
+
+    .key.filtered {
         background: #3a3a3c;
     }
+
+    @media (min-width: 640px) {
+		.key {
+            --key-line-height: 2.5;
+        }
+	}
 </style>
 
 <div class="keyboard">
@@ -62,7 +74,7 @@
             <button 
                 class="key"
                 class:action={!key.match(/^[a-z]$/i)} 
-                class:disabled={disabledKeys.indexOf(key) > -1}
+                class:filtered={filteredChars.indexOf(key) > -1}
                 on:click={()=>{dispatch('input', { key })}}
             >
                 {#if key == 'backspace'}

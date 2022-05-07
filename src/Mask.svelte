@@ -5,7 +5,7 @@
 </script>
 
 {#if show}
-<div class="mask" transition:fade={{duration: 300}} on:touchstart|capture={()=>{}}></div>
+<div class="mask" transition:fade={{duration: 300}} on:touchstart|stopPropagation={()=>{}}></div>
 {/if}
 
 <style>
@@ -15,7 +15,7 @@
         right: 0;
         bottom: 0;
         left: 0;
-        background: rgba(0,0,0,.7);
+        background: rgba(18,18,20,0.7);
         -webkit-backdrop-filter: blur(10px);
         backdrop-filter: blur(10px);
     }

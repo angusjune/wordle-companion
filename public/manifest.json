@@ -1,9 +1,0 @@
-{
-    "name": "Wordle Companion",
-    "short_name": "Wordle Companion",
-    "icons": [],
-    "start_url": "/index.html",
-    "display": "standalone",
-    "background_color": "#121214",
-    "theme_color": "#121214"
-}

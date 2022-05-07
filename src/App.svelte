@@ -1,6 +1,7 @@
 <script>
 	import { tick } from 'svelte';
-	import { fade } from 'svelte/transition';
+	import { fade, slide, scale } from 'svelte/transition';
+	import { quintOut } from 'svelte/easing';
 	import Keyboard from './Keyboard.svelte';
 	import Mask from './Mask.svelte';
 	import Toast from './Toast.svelte';
@@ -10,7 +11,7 @@
 
 	let value = ['?', '?', '?', '?', '?'];
 
-	let disabledKeys = [];
+	let filteredChars = [' ', "'"];
 
     let cursor = 0;
 
@@ -19,7 +20,8 @@
 	let showToast = false;
 	let showModal = false;
 	let showMask = false;
-	let enteringDisabledKeys = false;
+	let showNoSearchResult = false;
+	let enteringFilteredChars = false;
 	let toastMsg = '';
 
 	let candidates = [];
@@ -39,8 +41,10 @@
 	function onKbInput(e) {
 		const { key } = e.detail;
 		const keyVal = key.toLowerCase();
+		showNoSearchResult = false;
+		filteredCandidates = [];
 
-		if (!enteringDisabledKeys) {
+		if (!enteringFilteredChars) {
 			if (keyVal === 'backspace') {
 				value[cursor] = '?';
 			} else if (keyVal === 'enter') {
@@ -48,22 +52,22 @@
 					showKb = false;
 					fetchData();
 				} else {
-
+					toastOn('At least ' + AT_LEAST + ' letter' + (AT_LEAST> 1 ? 's' : ''));
 				}
 			} else if (keyVal.match(/^[a-z]$/i)) {
 				value[cursor] = keyVal;
 			}
 		} else {
 			if (keyVal === 'enter') {
-				enteringDisabledKeys = false;
+				enteringFilteredChars = false;
 			} else if (keyVal.match(/^[a-z]$/i)) {
-				const index = disabledKeys.indexOf(key);
+				const index = filteredChars.indexOf(key);
 				if (index < 0) {
 					// key does not exists in list
-					disabledKeys = [...disabledKeys, key];
+					filteredChars = [...filteredChars, key];
 				} else {
-					disabledKeys.splice(index, 1);
-					disabledKeys = disabledKeys;
+					filteredChars.splice(index, 1);
+					filteredChars = filteredChars;
 				}
 			}
 		}
@@ -73,8 +77,8 @@
 		onKbInput({detail: { key: e.key }});
 	}
 
-	function onClickEnterDisabledKeys() {
-		enteringDisabledKeys = !enteringDisabledKeys;
+	function onClickEnterFilteredChars() {
+		enteringFilteredChars = !enteringFilteredChars;
 		showKb = true;
 	}
 
@@ -83,9 +87,6 @@
 	let defs = [];
 
 	function onClickWord(item) {
-		console.log(item);
-		// const { tags } = item;
-
 		pronun = item.tags[1].replace('ipa_pron:', '');
 		word = item.word;
 		defs = item.defs;
@@ -93,12 +94,12 @@
 		showModal = true;
 	}
 
-	function toastOn(msg, lastsFor=2000) {
+	function toastOn(msg) {
 		showToast = true;
 		toastMsg  = msg;
-		setTimeout(() => {
-			showToast = false;
-		}, lastsFor);
+		// setTimeout(() => {
+		// 	showToast = false;
+		// }, lastsFor);
 	}
 
 	async function fetchData() {
@@ -113,13 +114,14 @@
 
 		await tick();
 		loading = false;
+		showNoSearchResult = true;
 	}
 
-	$:filteredCandidates = candidates.filter(item => !disabledKeys.some(v => item.word.includes(v)))
+	$:filteredCandidates = candidates.filter(item => !filteredChars.some(v => item.word.includes(v)))
 	$:console.log(filteredCandidates);
-	$:showMask = enteringDisabledKeys;
+	$:showMask = enteringFilteredChars;
 	$:showMask = showModal;
-	$:showKb = !showModal;
+	$:if (showModal) { showKb = false }
 </script>
 
 <svelte:body on:keydown={onKeyPress} on:touchstart={()=>{}} />
@@ -130,6 +132,10 @@
 	</header>
 
 	<main class="main">
+
+		<div class="char-tip">
+			Enter <span class="green">certain letters</span> in the right boxes
+		</div>
 		<div class="char-wrap" on:click={()=>{showKb=true}}>
 			{#each value as char, index}
 			<div class="char" class:filled={value[index] != '?'} class:focus={cursor == index} on:click={()=>{cursor = index}}>{char == '?' ? '' : char}</div>
@@ -137,24 +143,60 @@
 		</div>
 	
 		<div class="word-wrap">
+			{#if loading}
+			<div class="loader">Loading...</div>
+
+			{:else}
+
 			{#each filteredCandidates as candidate}
 			<div class="word" on:click={()=>onClickWord(candidate)}>{candidate.word}</div>
 			{/each}
+
+			{#if filteredCandidates.length < 1 && showNoSearchResult}
+				<div class="tip large" transition:scale={{easing:quintOut, duration: 500}}>🤷‍♀️</div>
+			{/if}
+
+			{/if}
+
+			
 		</div>
 	</main>
 
-	{#if !showModal}
-	<button class="btn" class:at-bottom={!showKb} on:click={onClickEnterDisabledKeys}>{enteringDisabledKeys ? 'Done' : 'Select not-in-the-word letters'}</button>
-	{/if}
+	<div class="actions">
+		{#if !showModal}
+		<div class="actions__buttons">
+			<button class="btn" class:at-bottom={!showKb} on:click={onClickEnterFilteredChars}>{enteringFilteredChars ? 'Finish' : 'Select not-in-the-word letters'}</button>
 
-	{#if showKb}
-	<div class="kb-wrap" transition:fade="{{ duration: 200 }}">
-		<Keyboard on:input={onKbInput} {disabledKeys} />
+			{#if !enteringFilteredChars}
+			<button class="kb-toggle" on:click={()=> showKb = !showKb}>
+				{#if showKb}
+				<span class="material-symbols-outlined">keyboard_hide</span>
+				{:else}
+				<span class="material-symbols-outlined">keyboard</span>
+				{/if}
+			</button>
+			{/if}
+		</div>
+		{/if}
+	
+		{#if showKb}
+		<div class="kb-wrap" transition:slide={{ duration: 200 }}>
+			<div class="kb-wrap__inner">
+				<Keyboard on:input={onKbInput} {filteredChars} />
+			</div>
+		</div>
+		{/if}
 	</div>
-	{/if}
+	
 </div>
 
 <Mask show={showMask} />
+
+{#if enteringFilteredChars}
+<div class="tip centered" transition:fade={{ duration: 200 }}>
+	Select not-in-the-word letters from the keyboard
+</div>
+{/if}
 
 <Modal bind:show={showModal}>
 	<div class="dict">
@@ -166,11 +208,13 @@
 		</header>
 		{#if defs}
 		{#each defs as def}
-		<p class="dict_def">{@html def }</p>
+		<p class="dict__def">{@html def }</p>
 		{/each}
 		{/if}
 	</div>
 </Modal>
+
+<Toast bind:show={showToast}>{toastMsg}</Toast>
 
 
 <style>
@@ -178,20 +222,24 @@
 
 	:global(body) {
 		--width: 90%;
+		--kb-width: 96%;
 
 		--background: #121214;
 		--green: #528c4e;
-		--border: #3a3a3c;
+		--char-border: #3a3a3c;		
 
 		background: var(--background);
 		font-size: 16px;
+		overflow: hidden;
+		-webkit-user-select: none;
 		user-select: none;
 	}
 
 	.container {
 		display: flex;
 		flex-direction: column;
-		height: 100vh;
+		height: 100%;
+		overflow-x: hidden;
 	}
 
 	.header {
@@ -199,6 +247,11 @@
 		color: #fff;
 		width: 100%;
 		padding: 0.5em 0;
+		position: sticky;
+		top: 0;
+		background: rgba(18,18,20,0.75);
+		-webkit-backdrop-filter: blur(10px);
+		backdrop-filter: blur(10px);
 	}
 
 	.header__title {
@@ -216,12 +269,22 @@
 		margin: 0 auto;
 	}
 
+	.char-tip {
+		margin-top: 2em;
+		text-align: center;
+		color: rgba(255,255,255,.6);
+	}
+
+	.green {
+		color: var(--green);
+	}
+
 	.char-wrap {
 		width: 100%;
 		display: flex;
 		justify-content: center;
-		gap: 0.25em;
-		padding: 2em;
+		gap: 0.3em;
+		padding: 1em 2em 2em;
 	}
 
 	.char {
@@ -229,13 +292,12 @@
 		text-transform: uppercase;
 		display: grid;
 		place-items: center;
-		border: 2px solid var(--border);
+		border: 2px solid var(--char-border);
 		color: #fff;
-		font-size: 1.25em;
+		font-size: 1.5em;
 		font-weight: bold;
-		width: 20%;
-		max-width: 3.5em;
-		height: 4em;
+		width: 2.6em;
+		height: 2.7em;
 	}
 
 	.char.focus {
@@ -250,6 +312,23 @@
 
 	.char.filled.focus {
 		border-color: rgba(255,255,255,.4);
+	}
+
+	.tip {
+		padding: 0 4em;
+		font-size: 1.5em;
+		color: #fff;
+		text-align: center;
+	}
+
+	.tip.centered {
+		position: fixed;
+		top: 50%;
+		transform: translateY(-50%);
+	}
+
+	.tip.large {
+		font-size: 3em;
 	}
 
 	.word-wrap {
@@ -268,28 +347,69 @@
 		padding: 0.25em;
 	}
 
-	.kb-wrap {
+	.actions {
 		position: sticky;
 		bottom: 0;
 		left: 0;
 		right: 0;
 		z-index: 1;
+	}
+
+	.kb-wrap {
 		padding: 1em 0 env(safe-area-offset-bottom, 1em);
 		background: rgba(18,18,20,0.75);
 		-webkit-backdrop-filter: blur(10px);
 		backdrop-filter: blur(10px);
 	}
 
+	.kb-wrap__inner {
+		position: relative;
+		width: var(--kb-width);
+		margin: auto;
+	}
+
+	.kb-toggle {
+		position: absolute;
+		right: 0;
+		width: 3em;
+		height: 3em;
+		display: none;
+		place-items: center;
+		color: rgba(255,255,255,.6);
+		background: rgba(18,18,20,0.75);
+		-webkit-backdrop-filter: blur(10px);
+		backdrop-filter: blur(10px);
+		border: 0;
+		margin: 0;
+		padding: 0;
+	}
+
+	.kb-toggle:active {
+		background: #3a3a3c;
+	}
+
+	.actions__buttons {
+		position: relative;
+		display: flex;
+		justify-content: center;
+		margin: auto;
+	}
+
 	.btn {
-		--border: 0.5px solid rgba(255,255,255,.06);
-		background: var(--background);
+		--border: 1px solid rgba(255,255,255,.06);
+		background: rgba(18,18,20,0.75);
+		-webkit-backdrop-filter: blur(10px);
+		backdrop-filter: blur(10px);
 		color: #fff;
+		font-weight: bold;
+		line-height: 1;
 		border: 0;
 		border-top: var(--border);
 		border-bottom: var(--border);
 		padding: 1em 0;
 		margin: 0;
 		z-index: 1;
+		width: 100%;
 	}
 
 	.btn:active {
@@ -301,7 +421,7 @@
 	}
 
 	.dict {
-		padding: 0 1.5em 1.5em;
+		padding: 0 1.5em 2.5em;
 	}
 
 	.dict__header {
@@ -319,13 +439,57 @@
 		opacity: 0.6;
 	}
 
-	.dict__def {
+	.dict__def:last-of-type {
+		margin-bottom: 0;
 	}
+
+	.loader,
+	.loader:after {
+		border-radius: 50%;
+		width: 2em;
+		height: 2em;
+	}
+	.loader {
+		margin: 2em auto;
+		font-size: 10px;
+		position: relative;
+		text-indent: -9999em;
+		border-top: .4em solid rgba(255, 255, 255, 0.2);
+		border-right: .4em solid rgba(255, 255, 255, 0.2);
+		border-bottom: .4em solid rgba(255, 255, 255, 0.2);
+		border-left: .4em solid #ffffff;
+		transform: translateZ(0);
+		animation: load 1.1s infinite linear;
+	}
+
+	@keyframes load {
+		from { transform: rotate(0deg); }
+		to   { transform: rotate(360deg); }
+	}
+
+
+	@media (min-width: 340px) {
+        .btn {
+            width: fit-content;
+			border: var(--border);
+			margin: 0 auto 1em auto;
+			padding: 1em 1.5em;
+			border-radius: 4px;
+        }
+		.kb-toggle {
+			display: grid;
+		}
+
+		.actions__buttons {
+			width: var(--kb-width);
+		}
+    }
 
 
 	@media (min-width: 640px) {
 		:global(body) {
 			--width: 640px;
+			--kb-width: 640px;
 			font-size: 18px;
 		}
 	}
