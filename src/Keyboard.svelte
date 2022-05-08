@@ -47,6 +47,7 @@
         margin: 0;
         display: grid;
         place-items: center;
+        touch-action: manipulation;
     }
 
     .key:active {
