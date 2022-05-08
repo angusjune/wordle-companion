@@ -333,6 +333,7 @@
 		gap: 0.5em;
 		justify-content: center;
 		padding: 2em 0;
+		touch-action: manipulation;
 	}
 
 	.word {
