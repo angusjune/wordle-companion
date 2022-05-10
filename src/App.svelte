@@ -1,6 +1,6 @@
 <script>
 	import { tick } from 'svelte';
-	import { fade, slide, scale } from 'svelte/transition';
+	import { fade, slide } from 'svelte/transition';
 	import LetterBox from './LetterBox.svelte';
 	import WordList from './WordList.svelte';
 	import Keyboard from './Keyboard.svelte';
@@ -291,6 +291,10 @@
 	}
 
 	.letterbox {
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
 		padding: 1em 0 2em;
 
 		&__header {
@@ -342,6 +346,7 @@
 			display: flex;
 			justify-content: center;
 			margin: auto;
+			width: 96%;
 			max-width: 640px;
 			padding-bottom: env(safe-area-offset-bottom, 1em);
 		}
@@ -369,6 +374,12 @@
 			border: none;
 			position: absolute;
 			right: 0;
+		}
+	}
+
+	@media (max-width: 340px) {
+		:global(body) {
+			font-size: 12px;
 		}
 	}
 

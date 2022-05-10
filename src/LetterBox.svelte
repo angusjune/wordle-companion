@@ -35,6 +35,7 @@
 
         display: flex;
 		gap: 0.3em;
+        max-width: 100%;
 
         &__letter {
             position: relative;
