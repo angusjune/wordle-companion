@@ -1,0 +1,27 @@
+@use "sass:color";
+
+$background: #121214;
+$surface: #3a3a3c;
+$surface-secondary: #e6e6e6;
+$surface-invert: #3a3a3c;
+$green: #528c4e;
+$yellow: #b59e39;
+$text-primary: #fff;
+$text-invert-primary: #000;
+
+:global(:root) {
+    --background: #{$background};
+    --surface: #{$surface};
+    --surface-secondary: #{$surface-secondary};
+    --surface-invert: #{$surface-invert};
+    --green: #{$green};
+    --yellow: #{$yellow};
+    --text-primary: #{$text-primary};
+    --text-invert-primary: #{$text-invert-primary};
+}
+
+@mixin blurredSurface($color:$background, $alpha: .8, $radius: 10px) {
+    -webkit-backdrop-filter: blur($radius);
+    backdrop-filter: blur($radius);
+    background-color: rgba($color, $alpha);
+}
