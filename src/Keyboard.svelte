@@ -3,8 +3,8 @@
 
     const dispatch = createEventDispatcher();
 
-    export let filteredChars  = [];
-    export let confirmedChars = [];
+    export let excluded  = [];
+    export let confirmed = [];
 
     const keys = [
         ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
@@ -58,11 +58,11 @@
         max-width: none;
     }
 
-    .key.filtered {
+    .key.excluded {
         background: #3a3a3c;
     }
 
-    .key.certained {
+    .key.confirmed {
         background: var(--green);
     }
 
@@ -80,8 +80,8 @@
             <button 
                 class="key"
                 class:action={!key.match(/^[a-z]$/i)} 
-                class:filtered={filteredChars.indexOf(key) > -1}
-                class:certained={confirmedChars.indexOf(key) > -1}
+                class:excluded={excluded.indexOf(key) > -1}
+                class:confirmed={confirmed.indexOf(key) > -1}
                 on:click={()=>{dispatch('input', { key })}}
             >
                 {#if key == 'backspace'}

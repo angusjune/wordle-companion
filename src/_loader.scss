@@ -1,0 +1,23 @@
+@mixin loader($size: 1.25em, $border: .4em, $foreground: #000, $background: rgba(0, 0, 0, 0.2)) {
+	.loader {
+		position: relative;
+		text-indent: -9999em;
+		border-top: $border solid $background;
+		border-right: $border solid $background;
+		border-bottom: $border solid $background;
+		border-left: $border solid $foreground;
+		transform: translateZ(0);
+		animation: load 1.1s infinite linear;
+
+        &, &:after {
+            border-radius: 50%;
+            width: $size;
+            height: $size;
+        }
+	}
+
+	@keyframes load {
+		from { transform: rotate(0deg); }
+		to   { transform: rotate(360deg); }
+	}
+}

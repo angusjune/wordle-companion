@@ -1,0 +1,29 @@
+@use "sass:color";
+@use './variables';
+
+@mixin core-style($background-color: variables.$background, $border-color: rgba(255,255,255,.06)) {
+    --border: 1px solid #{$border-color};
+
+    @include variables.blurredSurface($background-color);
+    color: var(--text-primary);
+    font-weight: bold;
+    line-height: 1;
+    border: var(--border);
+    border-radius: 4px;
+    padding: 1em 1.5em;
+    margin: 0;
+    touch-action: manipulation;
+
+    &:active {
+        background: lighten($background-color, 10%);
+        outline: 0;
+    }
+}
+
+@mixin with-icon($size: 3em) {
+    width: $size;
+    height: $size;
+    display: grid;
+    place-items: center;
+    padding: 0;
+}
