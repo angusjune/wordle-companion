@@ -21,6 +21,7 @@
         class:focus={cursor === index}
         tabindex="0"
         on:click={() => onClick(index)}
+        on:focus={() => onClick(index)}
     >
         {letter.value === '?' ? '' : letter.value}
     </div>

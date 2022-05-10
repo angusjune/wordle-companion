@@ -16,7 +16,7 @@
 	let excluded  = [];
 
 	$:if (letters) {
-		// console.log(letters);
+		confirmed = [];
 		maybe = [];
 		letters.forEach(({value, status}, index) => {
 			if (status) {
@@ -24,12 +24,12 @@
 					confirmed[index] = value;
 				} else if (status === 'maybe') {
 					maybe = [...maybe, value];
+					confirmed[index] = '?';
 				}
 			} else {
 				confirmed[index] = '?';
 			}
 		});
-		// console.log(confirmed, maybe);
 	}
 
     let cursor = 0;
@@ -38,7 +38,6 @@
 	let loading = false;
 	let showToast = false;
 	let showModal = false;
-	let showMask = false;
 	let showNoSearchResult = false;
 	let enteringExcludedLetters = false;
 	let enteringMaybeLetters = false;
@@ -91,6 +90,9 @@
 			if (keyVal === 'enter') {
 				// done inputting excluded letters
 				enteringExcludedLetters = false;
+				if (!enteringExcludedLetters && countNonEmpty() >= AT_LEAST) {
+					fetchData();
+				}
 
 			} else if (keyVal.match(/^[a-z]$/i) && letters.findIndex(letter => letter.value === keyVal) < 0) {
 				// add excluded letters if letter is not confirmed or maybe
@@ -125,7 +127,9 @@
 		defs: [],
 	};
 
-	function onClickWord(index) {
+	function onClickWord(e) {
+		const { index } = e.detail;
+
 		const word = candidates[index];
 		dict.word = word.word;
 		dict.pron = word.tags[1].replace('ipa_pron:', '');
@@ -160,8 +164,6 @@
 		loading = false;
 		showNoSearchResult = true;
 	}
-
-	$:showMask = enteringExcludedLetters;
 </script>
 
 <svelte:body on:keydown={onKeyPress} on:touchstart={()=>{}} />
@@ -173,16 +175,38 @@
 
 	<main class="main">
 
-		<button class="btn btn--switch" on:click={()=>enteringMaybeLetters=!enteringMaybeLetters}>switch</button>
+		<div class="letterbox">
+			<div class="letterbox__header">
+				<div class="letterbox__label">
+					{#if !enteringMaybeLetters}
+					Enter <span class="green">confirmed</span> letters
+					{:else}
+					Enter <span class="yellow">unconfirmed</span> letters
+					{/if}
+				</div>
 
-		<div class="char-tip">
-			Enter <span class="green">confirmed letters</span> in their spots
+				<button class="btn btn--icon btn--switch" on:click={()=>enteringMaybeLetters=!enteringMaybeLetters}>
+					<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M13.65 40L4 30.35L13.65 20.7L15.75 22.8L9.7 28.85H25.5V31.85H9.7L15.75 37.9L13.65 40Z" fill="#B59E39"/>
+						<path d="M32.25 25.2L34.35 27.3L44 17.65L34.35 8L32.25 10.1L38.3 16.15H22.5V19.15H38.3L32.25 25.2Z" fill="#5B9657"/>
+					</svg>				
+				</button>
+			</div>
+
+			<LetterBox --focus-theme={focusTheme} {letters} bind:cursor />
 		</div>
 
-		<LetterBox --focus-theme={focusTheme} {letters} bind:cursor />
-
-		<WordList {loading} {showNoSearchResult} words={candidates} on:click={onClickWord} />
+		<div class="wordlist">
+			<WordList {loading} {showNoSearchResult} words={candidates} on:click={onClickWord} />
+		</div>
 	</main>
+
+	{#if enteringExcludedLetters}
+	<Mask show={enteringExcludedLetters} />
+	<div class="tip centered" transition:fade={{ duration: 200 }}>
+		Select not-in-the-word letters from the keyboard
+	</div>
+	{/if}
 
 	<div class="actions">
 		{#if !showModal}
@@ -190,7 +214,7 @@
 			<button class="btn btn--enter-excluded" on:click={onClickEnterFilteredChars}>{enteringExcludedLetters ? 'Finish' : 'Select not-in-the-word letters'}</button>
 
 			{#if !enteringExcludedLetters}
-			<button class="btn btn--kb-toggle" on:click={()=> showKb = !showKb}>
+			<button class="btn btn--icon btn--kb-toggle" on:click={()=> showKb = !showKb}>
 				{#if showKb}
 				<span class="material-symbols-outlined">keyboard_hide</span>
 				{:else}
@@ -204,21 +228,13 @@
 		{#if showKb}
 		<div class="actions__keyboard" transition:slide={{ duration: 200 }}>
 			<div class="actions__keyboard-inner">
-				<Keyboard on:input={onKeyboardInput} {excluded} {confirmed} />
+				<Keyboard on:input={onKeyboardInput} {excluded} {confirmed} {maybe} />
 			</div>
 		</div>
 		{/if}
 	</div>
 	
 </div>
-
-<Mask show={showMask} />
-
-{#if enteringExcludedLetters}
-<div class="tip centered" transition:fade={{ duration: 200 }}>
-	Select not-in-the-word letters from the keyboard
-</div>
-{/if}
 
 <DictModal bind:show={showModal} {...dict} />
 
@@ -235,6 +251,7 @@
 		--char-border: #3a3a3c;		
 
 		background: var(--background);
+		color: var(--text-primary);
 		font-size: 16px;
 		overflow: hidden;
 		-webkit-user-select: none;
@@ -251,7 +268,6 @@
 	.header {
 		@include variables.blurredSurface();
 		font-family: 'Koulen', cursive;
-		color: #fff;
 		width: 100%;
 		padding: 0.5em 0;
 		position: sticky;
@@ -274,18 +290,32 @@
 		margin: 0 auto;
 	}
 
-	.char-tip {
-		margin-top: 2em;
-		text-align: center;
-		color: rgba(255,255,255,.6);
+	.letterbox {
+		padding: 1em 0 2em;
 
-		.green {
-			color: var(--green);
+		&__header {
+			display: flex;
+			gap: 0.5em;
+			justify-content: center;
+			align-items: center;
+			padding-bottom: 1em;
 		}
 
-		.yellow {
-			color: var(--yellow);
+		&__label {
+			color: rgba(255,255,255,.6);
+
+			.green {
+				color: var(--green);
+			}
+
+			.yellow {
+				color: var(--yellow);
+			}
 		}
+	}
+
+	.wordlist {
+		padding-bottom: 2em;
 	}
 
 	.tip {
@@ -306,13 +336,14 @@
 		bottom: 0;
 		left: 0;
 		right: 0;
-		z-index: 1;
 
 		&__buttons {
 			position: relative;
 			display: flex;
 			justify-content: center;
 			margin: auto;
+			max-width: 640px;
+			padding-bottom: env(safe-area-offset-bottom, 1em);
 		}
 
 		&__keyboard {
@@ -329,39 +360,20 @@
 	}
 
 	.btn {
-		@include button.core-style();
-		
-		&--enter-excluded {
-			/* width: 100%; */
+		&--switch {
+			@include button.with-icon(2em);
+			border: none;
 		}
 
 		&--kb-toggle {
-			@include button.core-style($border-color: transparent);
+			border: none;
 			position: absolute;
 			right: 0;
-			width: 3em;
-			height: 3em;
 		}
 	}
 
-	/* @media (min-width: 340px) {
-        .btn {
-            width: fit-content;
-			border: var(--border);
-			margin: 0 auto 1em auto;
-			padding: 1em 1.5em;
-			border-radius: 4px;
-        }
-		.kb-toggle {
-			display: grid;
-		}
-    } */
-
-
 	@media (min-width: 640px) {
 		:global(body) {
-			/* --width: 640px; */
-			/* --kb-width: 640px; */
 			font-size: 18px;
 		}
 	}

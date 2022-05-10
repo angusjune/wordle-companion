@@ -5,6 +5,7 @@
 
     export let excluded  = [];
     export let confirmed = [];
+    export let maybe = [];
 
     const keys = [
         ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
@@ -13,7 +14,7 @@
     ];
 </script>
 
-<style>
+<style scoped lang="scss">
     .keyboard {
         width: 100%;
         display: flex;
@@ -48,22 +49,26 @@
         display: grid;
         place-items: center;
         touch-action: manipulation;
-    }
 
-    .key:active {
-        background: #a0a4a2;
-    }
+        &:active {
+            background: #a0a4a2;
+        }
 
-    .key.action {
-        max-width: none;
-    }
+        &.action {
+            max-width: none;
+        }
 
-    .key.excluded {
-        background: #3a3a3c;
-    }
+        &.excluded {
+            background: #3a3a3c;
+        }
 
-    .key.confirmed {
-        background: var(--green);
+        &.maybe {
+            background: var(--yellow);
+        }
+
+        &.confirmed {
+            background: var(--green);
+        }
     }
 
     @media (min-width: 640px) {
@@ -81,6 +86,7 @@
                 class="key"
                 class:action={!key.match(/^[a-z]$/i)} 
                 class:excluded={excluded.indexOf(key) > -1}
+                class:maybe={maybe.indexOf(key) > -1}
                 class:confirmed={confirmed.indexOf(key) > -1}
                 on:click={()=>{dispatch('input', { key })}}
             >

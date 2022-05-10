@@ -1,6 +1,6 @@
 <script>
     import { createEventDispatcher } from 'svelte';
-    import { scale } from 'svelte/transition';
+    import { scale, fade } from 'svelte/transition';
 	import { quintOut } from 'svelte/easing';
 
     const dispatch = createEventDispatcher();
@@ -11,39 +11,47 @@
 </script>
 
 <section class="word-list" role="list">
+
+    {#if loading}
+    <div class="loader word-list__loader" transition:scale></div>
+    {:else}
+
     {#each words as word, index}
-    <div class="word" role="listitem" tabindex="0" on:click={()=>dispatch('click', {index})}>
+    <div class="word" role="listitem" tabindex="0" on:click={()=>dispatch('click', {index})} transition:fade={{duration:100}}>
         {word.word}
     </div>
     {/each}
 
-    {#if loading}
-    <div class="loader word-list__loader" transition:scale></div>
-    {/if}
-
     {#if words.length < 1 && showNoSearchResult}
         <div class="word-list__empty" transition:scale={{easing:quintOut, duration: 500}} aria-label="no search result">🤷‍♀️</div>
     {/if}
+
+    {/if}
+    
 </section>
 
 <style scoped lang="scss">
     @use './variables';
     @use './loader' as *;
 
-    @include loader();
+    @include loader($color: variables.$text-primary, $border: .3em);
 
     .word-list {
+        position: relative;
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
+        align-items: flex-start;
         gap: 0.4em;
 
         &__empty {
+            position: absolute;
             margin-bottom: 2em 0;
             font-size: 3em;
         }
 
         &__loader {
+            position: absolute;
             margin-top: 2em;
         }
     }

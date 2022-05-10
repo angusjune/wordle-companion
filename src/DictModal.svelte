@@ -6,11 +6,13 @@
     export let word = '';
     export let pron = '';
     export let defs = [];
+
+    let transition = {duration: 200};
 </script>
 
 {#if show}
-<Mask {show} />
-<div role="dialog" class="modal" transition:fade={{duration: 300}}>
+<Mask {show} {transition} on:click={()=>show = false} />
+<div role="dialog" class="modal" transition:fade={transition}>
     <div class="modal__header">
         <div class="modal__close" role="button" on:click={()=> show = false}>
             <span class="material-symbols-outlined">close</span>
@@ -47,7 +49,8 @@
         background: #323232;
         border-radius: 4px;
         color: #fff;
-        width: var(--width);
+        width: 85%;
+        max-width: 600px;
         max-height: 80%;
         overflow: hidden;
         padding: 0;

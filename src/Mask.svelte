@@ -1,11 +1,15 @@
 <script>
+    import { createEventDispatcher } from 'svelte';
     import { fade } from 'svelte/transition';
 
+    const dispatch = createEventDispatcher();
+
     export let show = false;
+    export let transition = {duration: 300};
 </script>
 
 {#if show}
-<div class="mask" transition:fade={{duration: 300}} on:touchstart|stopPropagation={()=>{}}></div>
+<div class="mask" transition:fade={transition} on:touchstart|stopPropagation={()=>{}} on:click={()=>dispatch('click')}></div>
 {/if}
 
 <style>
