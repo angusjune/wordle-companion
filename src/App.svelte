@@ -127,10 +127,12 @@
 		defs: [],
 	};
 
-	function onClickWord(e) {
+	async function onClickWord(e) {
 		const { index } = e.detail;
 
 		const word = candidates[index];
+
+		await tick();
 		dict.word = word.word;
 		dict.pron = word.tags[word.tags.findIndex(value => value.indexOf('ipa_pron') >= 0)].replace('ipa_pron:', '');
 		dict.defs = word.defs;
