@@ -1,6 +1,6 @@
 
 # Wordle Companion
-*A web app helps you playing Wordle.*
+*A web app helps you solving Wordle.*
 
 ## Get started
 
