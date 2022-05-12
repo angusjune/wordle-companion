@@ -1,7 +1,7 @@
 {
     "name": "Wordle Companion",
     "short_name": "WordleCP",
-    "description": "Helps you triumph every Wordle",
+    "description": "Helps you solve every Wordle",
     "icons": [
         {
             "src": "/icons/192.png",
