@@ -1,6 +1,6 @@
 
 # Wordle Companion
-*A web app helps you solving Wordle.*
+*A web app helps you solving Wordle.* [Check it out](https://wordle-companion.netlify.com)
 
 ## Get started
 
