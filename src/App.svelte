@@ -34,7 +34,7 @@
 
     let cursor = 0;
 
-	let showKb  = true;
+	let showKb  = isTouchDevice();
 	let loading = false;
 	let showToast = false;
 	let showModal = false;
@@ -46,6 +46,11 @@
 	let candidates = [];
 
 	$:focusTheme = enteringMaybeLetters ? '#b59e39' : '#528c4e';
+
+	function isTouchDevice() {
+		return ( 'ontouchstart' in window ) ||
+			( navigator.maxTouchPoints > 0 )
+	}
 
 	// how many values in array is not '?'
 	function countNonEmpty() {
@@ -154,13 +159,25 @@
 
 		console.log(`${confirmedQueryStr}${excludedQueryStr}${maybeQueryStr}`);
 
-		const query = '?sp=' + encodeURIComponent(`${confirmedQueryStr}${excludedQueryStr}${maybeQueryStr}`) + '&md=dr&ipa=1&max=30';
+		const query = '?sp=' + encodeURIComponent(`${confirmedQueryStr}${excludedQueryStr}${maybeQueryStr}`) + '&md=dr&ipa=1&max=40';
 
 		loading = true;
 
 		const response = await fetch(ENDPOINT + query);
 		const data = await response.json();
 		candidates = data;
+
+		for(const { word } of candidates) {
+			const wordLetters = word.split('');
+			for(let i = 0; i < wordLetters.length; i++) {
+				// if the letter is in the same place where status is 'maybe'
+				if(letters[i].status === 'maybe' && wordLetters[i] === letters[i].value) {
+					// exclude the word from candidates
+					candidates = candidates.filter(item => item.word !== word);
+					break;
+				}
+			}
+		}
 
 		await tick();
 		loading = false;
@@ -325,7 +342,6 @@
 	}
 
 	.tip {
-		padding: 0 4em;
 		font-size: 1.5em;
 		color: #fff;
 		text-align: center;
@@ -334,7 +350,8 @@
 	.tip.centered {
 		position: fixed;
 		top: 50%;
-		transform: translateY(-50%);
+		left: 50%;
+		transform: translate(-50%);
 	}
 
 	.actions {
