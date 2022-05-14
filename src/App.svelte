@@ -154,7 +154,7 @@
 		const ENDPOINT = 'https://api.datamuse.com/words';
 
 		let confirmedQueryStr = confirmed.join('');
-		let maybeQueryStr     = maybe.length > 0 ? `,*${maybe.join('*')}*` : '';
+		let maybeQueryStr     = maybe.length > 0 ? `,*${maybe.join('*,*')}*` : '';
 		let excludedQueryStr  = excluded.length > 0 ? `-${excluded.join('')}` : '';
 
 		console.log(`${confirmedQueryStr}${excludedQueryStr}${maybeQueryStr}`);
@@ -171,7 +171,7 @@
 			const wordLetters = word.split('');
 			for(let i = 0; i < wordLetters.length; i++) {
 				// if the letter is in the same place where status is 'maybe'
-				if(letters[i].status === 'maybe' && wordLetters[i] === letters[i].value) {
+				if(letters[i]?.status === 'maybe' && wordLetters[i] === letters[i].value) {
 					// exclude the word from candidates
 					candidates = candidates.filter(item => item.word !== word);
 					break;
