@@ -20,8 +20,10 @@ $text-invert-primary: #000;
     --text-invert-primary: #{$text-invert-primary};
 }
 
-@mixin blurredSurface($color:$background, $alpha: .8, $radius: 10px) {
-    -webkit-backdrop-filter: blur($radius);
-    backdrop-filter: blur($radius);
+@mixin blurredSurface($color:$background, $alpha: .8, $radius: 3px) {
+    -webkit-backdrop-filter: brightness(100%) blur($radius);
+    backdrop-filter: brightness(100%) blur($radius);
+    background-image: radial-gradient(rgba(0,0,0,0) 1px, $color 1px );
+    background-size: 4px 4px;
     background-color: rgba($color, $alpha);
 }

@@ -204,7 +204,7 @@
 					{/if}
 				</div>
 
-				<button class="btn btn--icon btn--switch" on:click={()=>enteringMaybeLetters=!enteringMaybeLetters}>
+				<button class="btn btn--icon btn--switch" on:click={()=>enteringMaybeLetters=!enteringMaybeLetters} aria-label={enteringMaybeLetters ? 'enter confirmed letters' : 'enter unconfirmed letters'}>
 					<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
 						<path d="M13.65 40L4 30.35L13.65 20.7L15.75 22.8L9.7 28.85H25.5V31.85H9.7L15.75 37.9L13.65 40Z" fill="#B59E39"/>
 						<path d="M32.25 25.2L34.35 27.3L44 17.65L34.35 8L32.25 10.1L38.3 16.15H22.5V19.15H38.3L32.25 25.2Z" fill="#5B9657"/>
@@ -212,7 +212,7 @@
 				</button>
 			</div>
 
-			<LetterBox --focus-theme={focusTheme} {letters} bind:cursor />
+			<LetterBox --focus-theme={focusTheme} {letters} bind:cursor on:click={()=>showKb = isTouchDevice()} />
 		</div>
 
 		<div class="wordlist">
@@ -291,6 +291,7 @@
 		padding: 0.5em 0;
 		position: sticky;
 		top: 0;
+		z-index: 1;
 
 		&__title {
 			margin: 0;
@@ -351,10 +352,13 @@
 		position: fixed;
 		top: 50%;
 		left: 50%;
+		width: 80%;
 		transform: translate(-50%);
 	}
 
 	.actions {
+		--bottom: calc(env(safe-area-inset-bottom, 1em) + 1em);
+
 		position: sticky;
 		bottom: 0;
 		left: 0;
@@ -367,12 +371,12 @@
 			margin: auto;
 			width: 96%;
 			max-width: 640px;
-			padding-bottom: env(safe-area-offset-bottom, 1em);
+			padding-bottom: var(--bottom);
 		}
 
 		&__keyboard {
 			@include variables.blurredSurface();
-			padding: 1em 0 env(safe-area-offset-bottom, 1em);
+			padding: 1em 0 var(--bottom);
 		}
 
 		&__keyboard-inner {

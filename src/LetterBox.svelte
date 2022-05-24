@@ -49,6 +49,7 @@
             font-weight: bold;
             width: 4rem;
             height: 4.2rem;
+            border-radius: 1px;;
             cursor: text;
             touch-action: manipulation;
 
@@ -66,6 +67,7 @@
                 border-color: var(--focus-color);
 
                 &:before {
+                    transition: background 0.15s;
                     background: var(--focus-color);
                     opacity: 0.2;
                 }

@@ -13,11 +13,11 @@
 <section class="word-list" role="list">
 
     {#if loading}
-    <div class="loader word-list__loader" transition:scale></div>
+    <div class="loader word-list__loader" transition:scale={{duration:100}}></div>
     {:else}
 
     {#each words as word, index}
-    <div class="word" role="listitem" tabindex="0" on:click={()=>dispatch('click', {index})} transition:fade={{duration:100}}>
+    <div class="word" role="listitem" tabindex="0" on:click={()=>dispatch('click', {index})} transition:fade={{duration:100, delay: index * 10}}>
         {word.word}
     </div>
     {/each}
