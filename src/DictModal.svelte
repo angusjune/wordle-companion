@@ -4,10 +4,25 @@
 
     export let show = false;
     export let word = '';
-    export let pron = '';
-    export let defs = [];
 
     let transition = {duration: 200};
+
+    let dicts = [];
+    let loading = false;
+
+    async function dictionaryLookUp(query) {
+        const ENDPOINT = 'https://api.dictionaryapi.dev/api/v2/entries/en/';
+
+        loading = true;
+
+        const response = await fetch(ENDPOINT + query);
+
+        loading = false;
+
+        dicts = await response.json();
+    }
+
+    $:dictionaryLookUp(word);
 </script>
 
 {#if show}
@@ -21,17 +36,43 @@
 
     <div class="modal__content">
         <div class="dict">
-            <header class="dict__header">
-                <span class="dict__word">{word}</span>
-                {#if pron}
-                <span class="dict__pron">|{pron}|</span>
+
+            {#each dicts as dict, dictIndex}
+                <header class="dict__header">
+                    <span class="dict__word">{dict.word}<sup>{dictIndex + 1}</sup></span>
+                    {#if dict.phonetics}
+                    {#each dict.phonetics as phonetic}
+
+                    {#if phonetic.text}
+                    <span class="dict__pron">{phonetic.text}</span>
+
+                    {#if phonetic.audio}
+                    <button class="btn btn--icon" data-src={phonetic.audio}><span class="material-symbols-outlined">volume_up</span></button>
+                    {/if}
+
+                    {/if}
+
+                    {/each}
+                    {/if}
+                </header>
+
+                {#if dict.meanings}
+                {#each dict.meanings as meaning}
+
+                <div class="dict__meaning">
+                    <p class="dict__pos">{meaning.partOfSpeech}</p>
+                    <ol class="dict__def-list">
+                    {#each meaning.definitions as def}
+                        <li class="dict__def-list__item">{def.definition}</li>
+                    {/each}
+                    </ol>
+                </div>
+
+                {/each}
+
                 {/if}
-            </header>
-            {#if defs}
-            {#each defs as def}
-            <p class="dict__def">{@html def }</p>
             {/each}
-            {/if}
+
         </div>
     </div>
         
@@ -39,6 +80,8 @@
 {/if}
 
 <style scoped lang="scss">
+    @use './button';
+
     .modal {
         display: flex;
         flex-direction: column;
@@ -88,23 +131,53 @@
             display: flex;
             gap: 0.5em;
             align-items: center;
+            margin-top: 1.5em;
+            &:first-of-type {
+                margin-top: 0;
+            }
         }
 
         &__word {
             font-size: 1.5em;
-            font-weight: bold;
+            sup {
+                opacity: 0.5;
+            }
         }
 
         &__pron {
             opacity: 0.6;
         }
 
-        &__def {
-            margin: 1em 0;
+        &__meaning {
+            padding-top: 1em;
+        }
 
-            &:last-of-type {
-                margin-bottom: 0;
+        &__pos {
+            margin: 0;
+        }
+
+        &__def-list {
+            font-size: 0.85em;
+            list-style: none;
+            counter-reset: counter;
+            margin: 0;
+
+            &__item {
+                counter-increment: counter;
+                margin: 0.5em 0;
+                position: relative;
+
+                &:before {
+                    content: counter(counter);
+                    opacity: 0.5;
+                    font-weight: bold;
+                    margin-left: -1em;
+                    position: absolute;
+                }
             }
+            /* &:last-of-type {
+                margin-bottom: 0;
+            } */
         }
 	}
 
