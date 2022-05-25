@@ -1,5 +1,9 @@
+<script context="module">
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+</script>
+
 <script>
-    import { fade } from 'svelte/transition';
+    import { fade, scale } from 'svelte/transition';
     import Mask from './Mask.svelte';
 
     export let show = false;
@@ -9,6 +13,10 @@
 
     let dicts = [];
     let loading = false;
+
+    let audio;
+    let audioSrc;
+    let audioLoading = false;
 
     async function dictionaryLookUp(query) {
         const ENDPOINT = 'https://api.dictionaryapi.dev/api/v2/entries/en/';
@@ -22,7 +30,29 @@
         dicts = await response.json();
     }
 
-    $:dictionaryLookUp(word);
+    function clickPlayAudio(src) {
+        audioSrc = src;
+        audioLoading = true;
+
+        fetch(src)
+        .then(response => response.arrayBuffer())
+        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then(decodedAudio => {
+            audio = decodedAudio;
+
+            const playSound = audioContext.createBufferSource();
+            playSound.buffer = audio;
+            playSound.connect(audioContext.destination);
+            playSound.start();
+
+            audioLoading = false;
+        })
+        .catch(e => {
+            console.error(e);
+        });
+    }
+
+    $: if (word) { dictionaryLookUp(word) };
 </script>
 
 {#if show}
@@ -37,22 +67,34 @@
     <div class="modal__content">
         <div class="dict">
 
+            {#if loading}
+            <div class="loader" transition:scale={{duration:100}}></div>
+            {:else}
+
+            {#if Array.isArray(dicts)}
             {#each dicts as dict, dictIndex}
                 <header class="dict__header">
-                    <span class="dict__word">{dict.word}<sup>{dictIndex + 1}</sup></span>
+                    <h1 class="dict__word">{dict.word}<sup>{dictIndex + 1}</sup></h1>
                     {#if dict.phonetics}
-                    {#each dict.phonetics as phonetic}
+                    <div class="dict__phonetics">
+                        {#each dict.phonetics as phonetic}
 
-                    {#if phonetic.text}
-                    <span class="dict__pron">{phonetic.text}</span>
+                        {#if phonetic.text}
+                        <span class="dict__pron">{phonetic.text}</span>
 
-                    {#if phonetic.audio}
-                    <button class="btn btn--icon" data-src={phonetic.audio}><span class="material-symbols-outlined">volume_up</span></button>
-                    {/if}
+                        {#if phonetic.audio}
+                        <button 
+                            class="dict__pron-btn" 
+                            class:loading={audioLoading && audioSrc === phonetic.audio} 
+                            on:click={()=>clickPlayAudio(phonetic.audio)}>
+                            <span class="material-symbols-outlined">volume_up</span>
+                        </button>
+                        {/if}
 
-                    {/if}
+                        {/if}
 
-                    {/each}
+                        {/each}
+                    </div>
                     {/if}
                 </header>
 
@@ -72,6 +114,13 @@
 
                 {/if}
             {/each}
+            {:else}
+
+            <div class="tip"> No definations found</div>
+
+            {/if}
+
+            {/if}
 
         </div>
     </div>
@@ -80,7 +129,15 @@
 {/if}
 
 <style scoped lang="scss">
+    @use './variables';
     @use './button';
+    @use './loader' as *;
+
+    @include loader($color: variables.$text-primary, $border: .3em);
+
+    .loader {
+        margin: auto;
+    }
 
     .modal {
         display: flex;
@@ -130,8 +187,9 @@
         &__header {
             display: flex;
             gap: 0.5em;
-            align-items: center;
+            align-items: baseline;
             margin-top: 1.5em;
+
             &:first-of-type {
                 margin-top: 0;
             }
@@ -139,13 +197,40 @@
 
         &__word {
             font-size: 1.5em;
+            font-weight: normal;
             sup {
                 opacity: 0.5;
+                font-size: 0.5em;
             }
+        }
+
+        &__phonetics {
+            display: flex;
+            gap: 0.5em;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         &__pron {
             opacity: 0.6;
+        }
+
+        &__pron-btn {
+            display: flex;
+            color: var(--text-primary);
+            opacity: 0.6;
+            background: transparent;
+            border: 0;
+            padding: 0;
+            margin: 0;
+
+            * {
+                font-size: 1em;
+            }
+
+            &.loading {
+                animation: shake 0.5s ease-in-out infinite;
+            }
         }
 
         &__meaning {
@@ -161,6 +246,7 @@
             list-style: none;
             counter-reset: counter;
             margin: 0;
+            padding-left: 3em;
 
             &__item {
                 counter-increment: counter;
@@ -171,14 +257,22 @@
                     content: counter(counter);
                     opacity: 0.5;
                     font-weight: bold;
-                    margin-left: -1em;
                     position: absolute;
+                    left: -3em;
+                    min-width: 2em;
+                    text-align: right;
                 }
             }
-            /* &:last-of-type {
-                margin-bottom: 0;
-            } */
         }
 	}
+
+    @keyframes shake {
+        0%, 100% {
+            transform: rotate(0deg);
+        }
+        50% {
+            transform: rotate(-30deg);
+        }
+    }
 
 </style>
