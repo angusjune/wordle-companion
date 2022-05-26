@@ -14,10 +14,6 @@
     let dicts = [];
     let loading = false;
 
-    let audio;
-    let audioSrc;
-    let audioLoading = false;
-
     async function dictionaryLookUp(query) {
         const ENDPOINT = 'https://api.dictionaryapi.dev/api/v2/entries/en/';
 
@@ -28,28 +24,6 @@
         loading = false;
 
         dicts = await response.json();
-    }
-
-    function clickPlayAudio(src) {
-        audioSrc = src;
-        audioLoading = true;
-
-        fetch(src)
-        .then(response => response.arrayBuffer())
-        .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
-        .then(decodedAudio => {
-            audio = decodedAudio;
-
-            const playSound = audioContext.createBufferSource();
-            playSound.buffer = audio;
-            playSound.connect(audioContext.destination);
-            playSound.start();
-
-            audioLoading = false;
-        })
-        .catch(e => {
-            console.error(e);
-        });
     }
 
     $: if (word) { dictionaryLookUp(word) };
@@ -75,25 +49,9 @@
             {#each dicts as dict, dictIndex}
                 <header class="dict__header">
                     <h1 class="dict__word">{dict.word}<sup>{dictIndex + 1}</sup></h1>
-                    {#if dict.phonetics}
+                    {#if dict.phonetic}
                     <div class="dict__phonetics">
-                        {#each dict.phonetics as phonetic}
-
-                        {#if phonetic.text}
-                        <span class="dict__pron">{phonetic.text}</span>
-
-                        {#if phonetic.audio}
-                        <button 
-                            class="dict__pron-btn" 
-                            class:loading={audioLoading && audioSrc === phonetic.audio} 
-                            on:click={()=>clickPlayAudio(phonetic.audio)}>
-                            <span class="material-symbols-outlined">volume_up</span>
-                        </button>
-                        {/if}
-
-                        {/if}
-
-                        {/each}
+                        <span class="dict__pron">{dict.phonetic}</span>
                     </div>
                     {/if}
                 </header>
@@ -198,6 +156,8 @@
         &__word {
             font-size: 1.5em;
             font-weight: normal;
+            margin: 0;
+            
             sup {
                 opacity: 0.5;
                 font-size: 0.5em;
